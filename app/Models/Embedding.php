@@ -20,6 +20,6 @@ class Embedding extends Model
 
     public function ayah()
     {
-        return $this->belongsTo(Ayah::class);
+        return $this->belongsTo(Ayah::class, 'ayah_id');
     }
 }
