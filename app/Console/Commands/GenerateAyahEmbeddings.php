@@ -14,7 +14,7 @@ class GenerateAyahEmbeddings extends Command
 
     public function handle()
     {
-        $apiKey = env('OPENAI_API_KEY');
+        $apiKey = config('services.openai.api_key');
         if (!$apiKey) {
             $this->error('Missing OPENAI_API_KEY in .env');
             return 1;

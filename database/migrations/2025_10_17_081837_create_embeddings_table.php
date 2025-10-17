@@ -27,11 +27,15 @@ return new class extends Migration
         });
 
         // Index untuk similarity search cepat
-        DB::statement('CREATE INDEX idx_embeddings_vector_cosine ON embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);');
+        DB::statement('CREATE INDEX idx_embeddings_vector_cosine 
+        ON embeddings USING ivfflat (embedding vector_cosine_ops) 
+        WITH (lists = 100);');
     }
 
     public function down(): void
     {
+        DB::statement('DROP INDEX IF EXISTS idx_embeddings_vector_cosine;');
+        
         Schema::dropIfExists('embeddings');
     }
 };
