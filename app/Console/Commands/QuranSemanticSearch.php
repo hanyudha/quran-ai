@@ -15,7 +15,16 @@ class QuranSemanticSearch extends Command
     public function handle()
     {
         $query = $this->argument('query');
-        $apiKey = env('OPENAI_API_KEY');
+        //$apiKey = env('OPENAI_API_KEY');
+        $apiKey = config('services.openai.api_key');
+
+        //debug: Check if apiKey is loaded correctly
+        $this->info("API Key: " . ($apiKey ? substr($apiKey, 0, 8) . '...' : 'Not Found'));
+
+        if (!$apiKey) {
+            $this->error('❌ OPENAI_API_KEY is not configured in config/services.php');
+            return;
+        }
 
         // 1️⃣ Buat embedding dari pertanyaan
         $response = Http::withToken($apiKey)
@@ -26,16 +35,22 @@ class QuranSemanticSearch extends Command
 
         if ($response->failed()) {
             $this->error("Failed to generate embedding for query");
-            $this->line($response->body());
+            $this->line("Status: " . $response->status());
+            $this->line("Response: " . $response->body());
             return;
         }
 
         $queryVector = $response->json('data.0.embedding');
+        if (!$queryVector) {
+            $this->error("No embedding vector received from OpenAI");
+            return;
+        }
+
         $vectorString = '[' . implode(',', $queryVector) . ']';
 
         // 2️⃣ Cari embedding terdekat di database
         $results = DB::table('embeddings')
-            ->select('id', 'ayah_id')
+            ->select('id', 'ayah_id') // versi chatgpt
             ->selectRaw('(1 - (embedding <=> ?)) as similarity', [$vectorString])
             ->whereRaw('(1 - (embedding <=> ?)) > 0.6', [$vectorString]) // Threshold
             ->orderByDesc('similarity')
