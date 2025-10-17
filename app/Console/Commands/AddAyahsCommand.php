@@ -3,111 +3,83 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use App\Models\Surah;
+use App\Models\Ayah;
 
 class AddAyahsCommand extends Command
 {
     protected $signature = 'quran:add-ayahs';
-    protected $description = 'Import seluruh ayat Al-Qur’an dari file JSON bersusun (per surah) ke tabel ayahs';
+    protected $description = 'Import Quran JSON into Surah and Ayah tables';
 
     public function handle()
     {
-        $filename = 'quran.json';
-        $path = storage_path("app/{$filename}");
+        $path = storage_path('app/quran.json');
 
         if (!file_exists($path)) {
             $this->error("❌ File tidak ditemukan: {$path}");
             return;
         }
 
+        $this->info("📖 Membaca file Quran JSON...");
         $json = json_decode(file_get_contents($path), true);
-        if (!$json) {
-            $this->error('❌ File JSON tidak valid atau rusak.');
+
+        if (!is_array($json)) {
+            $this->error("❌ Format JSON tidak valid!");
             return;
         }
 
-        // Deteksi apakah file berisi list per surah (ada "ayahs") atau list ayat langsung
-        $hasNestedStructure = isset($json[0]['ayahs']);
+        $totalSurah = count($json);
+        $this->info("📚 Terdeteksi {$totalSurah} surah. Mulai impor...");
 
-        $this->info($hasNestedStructure
-            ? "📖 Struktur bersusun (per surah) terdeteksi. Mengimpor seluruh ayat..."
-            : "📖 Struktur flat (langsung ayat) terdeteksi. Mengimpor seluruh ayat...");
+        $ayahCount = 0;
 
-        DB::transaction(function () use ($json, $hasNestedStructure) {
-            DB::table('ayahs')->truncate();
+        foreach ($json as $index => $surahData) {
+            $surahNumber = $surahData['number'] ?? null;
 
-            $batch = [];
-            $count = 0;
+            // 🕌 Simpan data surah
+            $surah = Surah::updateOrCreate(
+                ['number' => $surahNumber],
+                [
+                    'name_ar' => $surahData['name_ar'] ?? null,
+                    'name_id' => $surahData['name'] ?? null,
+                    'translation' => $surahData['translation'] ?? null,
+                    'revelation' => $surahData['revelation'] ?? null,
+                    'number_of_ayahs' => $surahData['numberOfAyahs'] ?? null,
+                    'description' => $surahData['description'] ?? null,
+                    'audio' => $surahData['audio'] ?? null,
+                    'bismillah_ar' => $surahData['bismillah']['arab'] ?? null,
+                    'bismillah_id' => $surahData['bismillah']['translation'] ?? null,
+                    'bismillah_audio' => $surahData['bismillah']['audio'] ?? null,
+                ]
+            );
 
-            if ($hasNestedStructure) {
-                foreach ($json as $surah) {
-                    $surahNumber = $surah['number'] ?? null;
+            // 🕋 Simpan semua ayat dari surah
+            if (!empty($surahData['ayahs'])) {
+                foreach ($surahData['ayahs'] as $ayahData) {
+                    Ayah::updateOrCreate(
+                        ['ayah_in_quran' => $ayahData['number']['inQuran'] ?? null],
+                        [
+                            'surah_id' => $surah->id,
+                            'ayah_in_surah' => $ayahData['number']['inSurah'] ?? null,
+                            'text_ar' => $ayahData['arab'] ?? '',
+                            'text_id' => $ayahData['translation'] ?? '',
+                            'audio' => $ayahData['audio'] ?? null,
+                            'image' => $ayahData['image'] ?? null,
+                            'tafsir' => $ayahData['tafsir'] ?? null,
+                            'meta' => $ayahData['meta'] ?? null,
+                        ]
+                    );
 
-                    foreach ($surah['ayahs'] as $ayah) {
-                        $batch[] = [
-                            'surah'          => $surahNumber,
-                            'ayah_in_quran'  => $ayah['number']['inQuran'] ?? null,
-                            'ayah_in_surah'  => $ayah['number']['inSurah'] ?? null,
-                            'text_ar'        => $ayah['arab'] ?? '',
-                            'text_id'        => $ayah['translation'] ?? '',
-                            'tafsir'         => isset($ayah['tafsir']) ? json_encode($ayah['tafsir']) : null,
-                            'audio'          => isset($ayah['audio']) ? json_encode($ayah['audio']) : null,
-                            'image'          => isset($ayah['image']) ? json_encode($ayah['image']) : null,
-                            'sajda'          => isset($ayah['meta']['sajda']) ? json_encode($ayah['meta']['sajda']) : null,
-                            'juz'            => $ayah['meta']['juz'] ?? null,
-                            'page'           => $ayah['meta']['page'] ?? null,
-                            'manzil'         => $ayah['meta']['manzil'] ?? null,
-                            'ruku'           => $ayah['meta']['ruku'] ?? null,
-                            'hizb_quarter'   => $ayah['meta']['hizbQuarter'] ?? null,
-                            'created_at'     => now(),
-                            'updated_at'     => now(),
-                        ];
-
-                        if (count($batch) >= 500) {
-                            DB::table('ayahs')->insert($batch);
-                            $count += count($batch);
-                            $this->info("✅ {$count} ayat diimpor sejauh ini...");
-                            $batch = [];
-                        }
-                    }
-                }
-            } else {
-                // Struktur flat
-                foreach ($json as $ayah) {
-                    $batch[] = [
-                        'surah'          => $ayah['surah'] ?? null,
-                        'ayah_in_quran'  => $ayah['ayah_in_quran'] ?? null,
-                        'ayah_in_surah'  => $ayah['ayah_in_surah'] ?? null,
-                        'text_ar'        => $ayah['text_ar'] ?? '',
-                        'text_id'        => $ayah['text_id'] ?? '',
-                        'tafsir'         => $ayah['tafsir'] ?? null,
-                        'audio'          => isset($ayah['audio']) ? json_encode($ayah['audio']) : null,
-                        'image'          => isset($ayah['image']) ? json_encode($ayah['image']) : null,
-                        'sajda'          => isset($ayah['sajda']) ? json_encode($ayah['sajda']) : null,
-                        'juz'            => $ayah['juz'] ?? null,
-                        'page'           => $ayah['page'] ?? null,
-                        'manzil'         => $ayah['manzil'] ?? null,
-                        'ruku'           => $ayah['ruku'] ?? null,
-                        'hizb_quarter'   => $ayah['hizb_quarter'] ?? null,
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ];
-
-                    if (count($batch) >= 500) {
-                        DB::table('ayahs')->insert($batch);
-                        $count += count($batch);
-                        $this->info("✅ {$count} ayat diimpor sejauh ini...");
-                        $batch = [];
+                    $ayahCount++;
+                    if ($ayahCount % 500 == 0) {
+                        $this->info("✅ {$ayahCount} ayat diimpor sejauh ini...");
                     }
                 }
             }
 
-            if ($batch) {
-                DB::table('ayahs')->insert($batch);
-                $count += count($batch);
-            }
+            $this->info("📗 Surah {$surahNumber}: {$surahData['name']} selesai diimpor.");
+        }
 
-            $this->info("🎉 Selesai! Total {$count} ayat berhasil diimpor ke tabel `ayahs`.");
-        });
+        $this->info("🎉 Impor selesai! Total {$ayahCount} ayat dari {$totalSurah} surah berhasil dimasukkan.");
     }
 }
