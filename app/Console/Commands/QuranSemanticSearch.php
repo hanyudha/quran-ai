@@ -36,14 +36,28 @@ class QuranSemanticSearch extends Command
         // 2️⃣ Cari embedding terdekat di database
         $results = DB::table('embeddings')
             ->select('id', 'ayah_id')
-            ->selectRaw('(1 - (embedding <#> ?)) as similarity', [$vectorString])
+            ->selectRaw('(1 - (embedding <=> ?)) as similarity', [$vectorString])
+            ->whereRaw('(1 - (embedding <=> ?)) > 0.6', [$vectorString]) // Threshold
             ->orderByDesc('similarity')
-            ->limit(3)
+            ->limit(5)
             ->get();
 
         // 3️⃣ Tampilkan hasil
         foreach ($results as $result) {
             $this->info("Ayah ID: {$result->ayah_id} | Similarity: " . round($result->similarity, 4));
+        }
+
+        // Display with quality indicators
+        foreach ($results as $result) {
+            $quality = match (true) {
+                $result->similarity >= 0.85 => '✅ EXCELLENT',
+                $result->similarity >= 0.75 => '👍 GOOD',
+                $result->similarity >= 0.65 => '⚠️ MODERATE',
+                default => '❌ WEAK'
+            };
+
+            $this->info("Ayah ID: {$result->ayah_id} | Similarity: " .
+                round($result->similarity, 4) . " {$quality}");
         }
 
         $this->info('✅ Semantic search complete!');

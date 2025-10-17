@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 
 class GenerateAyahEmbeddings extends Command
 {
-    protected $signature = 'quran:generate-embeddings {--limit=10}';
+    protected $signature = 'quran:generate-embeddings {--limit=100}';
     protected $description = 'Generate embeddings for ayat from the Quran using OpenAI API';
 
     public function handle()
