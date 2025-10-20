@@ -44,20 +44,56 @@ return new class extends Migration
         });
 
         // 3️⃣ Embeddings table
-        Schema::create('embeddings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('ayah_id')->constrained('ayahs')->cascadeOnDelete();
-            $table->vector('embedding', 1536);
-            $table->timestamps();
-        });
+        // Schema::create('embeddings', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('ayah_id')->constrained('ayahs')->cascadeOnDelete();
+        //     $table->vector('embedding', 1536);
+        //     $table->timestamps();
+        // });
 
-        // Index untuk similarity search cepat
-        DB::statement("
-            CREATE INDEX idx_embeddings_vector_cosine
-            ON embeddings
-            USING ivfflat (embedding vector_cosine_ops)
-            WITH (lists = 100);
-        ");
+        // // Index untuk similarity search cepat
+        // DB::statement("
+        //     CREATE INDEX idx_embeddings_vector_cosine
+        //     ON embeddings
+        //     USING ivfflat (embedding vector_cosine_ops)
+        //     WITH (lists = 100);
+        // ");
+        // Schema::create('embeddings', function (Blueprint $table) {
+        //     $table->id();
+
+        //     // Relasi ke ayahs
+        //     $table->foreignId('ayah_id')
+        //         ->unique() // 1 ayat = 1 embedding
+        //         ->constrained('ayahs')
+        //         ->onDelete('cascade');
+
+        //     // Vektor embedding
+        //     $table->vector('embedding', 1536);
+
+        //     // Metadata tambahan
+        //     $table->string('model')->default('text-embedding-3-small');
+        //     $table->integer('dimension')->default(1536);
+
+        //     // Status dan info tambahan (optional tapi berguna)
+        //     $table->boolean('is_active')->default(true);
+        //     $table->timestamp('last_processed_at')->nullable();
+
+        //     $table->timestamps();
+        // });
+
+        // // Index vector untuk similarity search
+        // DB::statement('
+        //     CREATE INDEX idx_embeddings_vector_cosine
+        //     ON embeddings
+        //     USING ivfflat (embedding vector_cosine_ops)
+        //     WITH (lists = 100);
+        // ');
+
+        // // Index tambahan untuk filter cepat
+        // Schema::table('embeddings', function (Blueprint $table) {
+        //     $table->index(['model']);
+        //     $table->index(['is_active']);
+        // });
     }
 
     public function down(): void

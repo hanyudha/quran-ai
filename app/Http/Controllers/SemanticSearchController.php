@@ -11,7 +11,7 @@ class SemanticSearchController extends Controller
 {
     public function search(Request $request)
     {
-        $query = trim($request->input('query'));
+        $query = trim(strtolower($request->input('query')));
 
         if (!$query) {
             return back()->with('error', 'Masukkan teks pencarian.');
@@ -24,7 +24,8 @@ class SemanticSearchController extends Controller
 
             // 2️⃣ Panggil API embeddings
             $response = $client->embeddings()->create([
-                'model' => 'text-embedding-3-small',
+                //'model' => 'text-embedding-3-small',
+                'model' => 'text-embedding-3-large',
                 'input' => $query,
             ]);
 
@@ -41,23 +42,25 @@ class SemanticSearchController extends Controller
             // 5️⃣ Query PostgreSQL (pgvector)
             $embeddingSql = '[' . implode(',', $embedding) . ']';
             $results = DB::select("
-                SELECT 
-                    ayahs.id, 
-                    ayahs.text_ar AS arabic, 
-                    ayahs.text_id AS translation,
-                    1 - (embeddings.embedding <=> '$embeddingSql') AS similarity
-                FROM embeddings
-                JOIN ayahs ON ayahs.id = embeddings.ayah_id
-                ORDER BY embeddings.embedding <=> '$embeddingSql'
-                LIMIT 5
-            ");
+    SELECT 
+        ayahs.id, 
+        ayahs.text_ar AS arabic, 
+        ayahs.text_id AS translation,
+        (1 - (embeddings.embedding <=> CAST(:embedding AS vector))) AS similarity
+    FROM embeddings
+    JOIN ayahs ON ayahs.id = embeddings.ayah_id
+    ORDER BY embeddings.embedding <=> CAST(:embedding AS vector)
+    LIMIT 5
+", [
+                'embedding' => '[' . implode(',', $embedding) . ']'
+            ]);
+
 
             // 6️⃣ Kirim ke view
             return view('semantic-results', [
                 'query' => $query,
                 'results' => $results,
             ]);
-
         } catch (Exception $e) {
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
