@@ -23,3 +23,11 @@ Route::post('/chat/quran', [QuranChatController::class, 'chat']);
 Route::post('/api/quran-chat/message', [QuranChatController::class, 'sendMessage']);
 Route::get('/api/quran-chat/history/{sessionId}', [QuranChatController::class, 'getChatHistory']);
 Route::delete('/api/quran-chat/history/{sessionId}', [QuranChatController::class, 'clearHistory']);
+
+Route::get('/test', function() {
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Server is working',
+        'time' => now()
+    ]);
+});
