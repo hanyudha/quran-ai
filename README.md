@@ -1,61 +1,262 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Quran AI
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Quran AI is a Laravel-based educational platform designed to make the Qur'an more accessible through modern AI technologies. It allows users to **search**, **ask**, and **get tafsir** from Quranic verses (ayah) or chapters (surah), enhanced with semantic search using vector embeddings powered by OpenAI and PostgreSQL with pgvector.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📑 Table of Contents
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Features](#features)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Examples](#examples)
+- [Dependencies](#dependencies)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+- [Contributors](#contributors)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🚀 Features
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- Search and explore Quranic content with AI assistance
+- Generate and store vector embeddings for ayahs using OpenAI
+- Use pgvector + PostgreSQL for fast semantic search
+- Built with Laravel 12 and modern frontend tools (Vite, Tailwind CSS)
+- Queue-driven processing for embedding generation
+- Docker-ready (includes setup for pgvector container)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🛠 Installation
 
-## Laravel Sponsors
+### Prerequisites
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- PHP 8.2+
+- Composer
+- Node.js & NPM
+- Docker (for pgvector support)
+- PostgreSQL with `pgvector` extension enabled
 
-### Premium Partners
+### Setup Steps
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+git clone https://github.com/your-repo/quran-ai.git
+cd quran-ai
 
-## Contributing
+# PHP & Laravel dependencies
+composer install
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Create environment file
+cp .env.example .env
 
-## Code of Conduct
+# Generate Laravel app key
+php artisan key:generate
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Run database migrations
+php artisan migrate
 
-## Security Vulnerabilities
+# Install front-end dependencies
+npm install
+npm run build
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+To run everything together:
 
-## License
+```bash
+composer run dev
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+## ⚙️ Configuration
+
+Update the following variables in your `.env` file:
+
+```env
+APP_NAME=Quran AI
+APP_URL=http://localhost
+
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=quran_ai
+DB_USERNAME=your_pg_user
+DB_PASSWORD=your_pg_pass
+
+OPENAI_API_KEY=your_openai_key_here
+```
+
+Make sure the `pgvector` extension is enabled in PostgreSQL. If you're using Docker:
+
+```bash
+docker build -f pgvector.Dockerfile -t pgvector .
+docker run --name pgvector -p 5432:5432 -d pgvector
+```
+
+---
+
+
+
+---
+
+## 🐳 Docker Setup for PostgreSQL + pgvector
+
+If you don't have a PostgreSQL database with the `pgvector` extension installed, you can spin one up quickly using Docker.
+
+### 🔧 Step-by-Step Setup
+
+1. **Build the Docker image:**
+
+   The project includes a `pgvector.Dockerfile` ready to go.
+
+   ```bash
+   docker build -f pgvector.Dockerfile -t pgvector .
+   ```
+
+2. **Run the PostgreSQL container:**
+
+   ```bash
+   docker run -d \
+     --name quran-pgvector \
+     -e POSTGRES_DB=quran_ai \
+     -e POSTGRES_USER=postgres \
+     -e POSTGRES_PASSWORD=postgres \
+     -p 5432:5432 \
+     pgvector
+   ```
+
+3. **Verify pgvector installation:**
+
+   Once the container is running, connect to the database and run:
+
+   ```sql
+   SELECT * FROM pg_available_extensions WHERE name = 'vector';
+   ```
+
+   If `vector` appears and is `installed`, you're good to go.
+
+4. **Update your `.env` file:**
+
+   ```env
+   DB_CONNECTION=pgsql
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   DB_DATABASE=quran_ai
+   DB_USERNAME=postgres
+   DB_PASSWORD=postgres
+   ```
+
+---
+
+### 📌 Notes
+
+- Port `5432` must be available on your host machine.
+- You can inspect logs using:  
+  ```bash
+  docker logs -f quran-pgvector
+  ```
+- To stop or remove the container:  
+  ```bash
+  docker stop quran-pgvector
+  docker rm quran-pgvector
+  ```
+
+
+## 📖 Usage
+
+### Generate Embeddings for Ayahs
+
+```bash
+php artisan quran:generate-embeddings --limit=100
+```
+
+This command uses OpenAI's `text-embedding-3-small` model to generate vector embeddings for Quranic ayahs.
+
+---
+
+### Queue Processing (Optional)
+
+For better performance:
+
+```bash
+php artisan queue:work
+```
+
+---
+
+## 💡 Examples
+
+#### Search Workflow
+
+1. Generate embeddings for Quranic ayahs.
+2. User inputs a query like: `"mercy and forgiveness"`.
+3. App performs a vector similarity search against the `embeddings` table.
+4. Closest matching ayahs are returned with tafsir (interpretation).
+
+---
+
+## 📦 Dependencies
+
+**Backend:**
+- Laravel 12
+- PHP 8.2+
+- PostgreSQL + pgvector
+- openai-php/laravel
+
+**Frontend:**
+- Vite
+- Tailwind CSS
+- Axios
+
+**Dev Tools:**
+- Laravel Sail (optional)
+- Pint, Pail, PHPUnit
+- Docker (for pgvector)
+
+---
+
+## 👨‍💻 Development
+
+Run the full dev environment with:
+
+```bash
+composer run dev
+```
+
+This will start:
+- Laravel server
+- Queue listener
+- Log tailing (via Pail)
+- Vite dev server
+
+---
+
+## 🐛 Troubleshooting
+
+- **No embeddings generated?**  
+  Ensure `OPENAI_API_KEY` is set and valid.
+
+- **Database issues?**  
+  Confirm PostgreSQL is running and pgvector is installed.
+
+- **Assets not loading?**  
+  Run `npm run build` or `npm run dev` again.
+
+---
+
+## 👤 Contributors
+
+- **Wandy Hanyudha** – Creator & Maintainer
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — you are free to use, modify, and distribute it for educational or personal use.
+
+---
+
+> *Quran AI is built with a purpose to enhance learning and engagement with the Quran through modern technology — may it benefit seekers of knowledge.*
