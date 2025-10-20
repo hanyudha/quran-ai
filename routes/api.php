@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\QuranSearchController;
+use App\Http\Controllers\QuranChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,3 +21,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // 🔍 Endpoint pencarian semantik Al-Qur’an
 Route::get('/search/semantic', [QuranSearchController::class, 'semantic']);
+
+Route::prefix('quran-chat')->group(function () {
+    Route::post('/message', [QuranChatController::class, 'sendMessage']);
+    Route::get('/history/{sessionId}', [QuranChatController::class, 'getChatHistory']);
+    Route::delete('/history/{sessionId}', [QuranChatController::class, 'clearHistory']);
+});
