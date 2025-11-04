@@ -159,8 +159,13 @@ class QuranChatService
             $embeddingString = $this->formatEmbeddingForVector($embedding);
 
             $results = DB::select("
-                SELECT a.id, a.text_ar, a.text_id, s.name_id AS surah_name,
-                       1 - (e.embedding <=> ?) AS similarity
+                SELECT
+                    a.id, 
+                    a.text_ar, 
+                    a.text_id,
+                    a.ayah_in_surah,
+                    s.name_id AS surah_name,
+                    1 - (e.embedding <=> ?) AS similarity
                 FROM embeddings e
                 JOIN ayahs a ON a.id = e.ayah_id
                 JOIN surahs s ON s.id = a.surah_id
@@ -210,18 +215,20 @@ PROMPT;
      * Format ayat untuk respon API
      */
     private function formatVerses(array $verses): array
-    {
-        return collect($verses)->map(function ($verse) {
-            return [
-                'surah_name' => $verse->surah_name,
-                'verse_number' => $verse->text_id,
-                'arabic_text' => $verse->text_ar,
-                'similarity' => isset($verse->similarity)
-                    ? round($verse->similarity * 100, 2) . '%'
-                    : 'N/A',
-            ];
-        })->toArray();
-    }
+{
+    return collect($verses)->map(function ($verse) {
+        return [
+            'surah_name' => $verse->surah_name ?? 'Unknown',
+            'verse_number' => $verse->text_id ?? 0,
+            'verse_test' => (string) ($verse->ayah_in_surah ?? 'N/A'), // Now using actual ayah numb
+            'arabic_text' => $verse->text_ar ?? '',
+            'similarity' => isset($verse->similarity)
+                ? round($verse->similarity * 100, 2) . '%'
+                : 'N/A',
+            'ayah_in_surah' => $verse->ayah_in_surah ?? null, // Actual ayah number from DB
+        ];
+    })->toArray();
+}
 
     /**
      * Ambil histori chat
