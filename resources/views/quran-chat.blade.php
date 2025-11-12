@@ -291,12 +291,24 @@
             line-height: 1.6;
             text-align: right;
             margin: 0.5rem 0;
+            direction: rtl;
+        }
+
+        .message-verse .translation {
+            font-style: italic;
+            color: var(--text-secondary);
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.5rem;
         }
 
         .message-verse .similarity {
             font-size: 0.8rem;
             color: var(--text-secondary);
             margin-top: 0.5rem;
+            text-align: right;
         }
 
         /* Input Area */
@@ -764,8 +776,9 @@
                             verses.forEach(verse => {
                                 verseHtml += `
                         <div class="message-verse">
-                            <span class="surah">${verse.surah_name} Ayat ${verse.verse_number}</span>
+                            <span class="surah">${verse.surah_name} Ayat ${verse.ayah_in_surah}</span>
                             <div class="arabic">${verse.arabic_text}</div>
+                            <div class="translation">${verse.verse_number}</div>
                             <div class="similarity">Relevansi: ${verse.similarity}</div>
                         </div>
                     `;
@@ -795,9 +808,10 @@
                     verses.forEach(verse => {
                         messageContent += `
                             <div class="message-verse">
-                                <span class="surah">${verse.surah_name} Ayat ${verse.verse_number}</span>
-                                <div class="arabic">${verse.arabic_text}</div>
-                                <div class="similarity">Relevansi: ${verse.similarity}</div>
+                            <span class="surah">${verse.surah_name} Ayat ${verse.ayah_in_surah}</span>
+                            <div class="arabic">${verse.arabic_text}</div>
+                            <div class="translation">${verse.verse_number}</div>
+                            <div class="similarity">Relevansi: ${verse.similarity}</div>
                             </div>
                         `;
                     });
