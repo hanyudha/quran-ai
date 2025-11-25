@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unique('ayah_id');
         });
 
-        // Tidak membuat index karena dimensi > 2000 tidak didukung
+        // Tidak membuat index karena dimensi > 2000 tidak didukung karena pgvector di Windows bukan build resmi.
         echo "⚠️ Skipping vector index creation (dimension={$dimension} > 2000 not supported by HNSW/IVFFLAT)\n";
     }
 
