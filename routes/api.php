@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // 🔍 Endpoint pencarian semantik Al-Qur’an
 Route::get('/search/semantic', [QuranSearchController::class, 'semantic']);
+Route::get('/search/check-structure', [QuranSearchController::class, 'checkTafsirStructure']);
 
 Route::prefix('quran-chat')->group(function () {
     Route::post('/message', [QuranChatController::class, 'sendMessage']);

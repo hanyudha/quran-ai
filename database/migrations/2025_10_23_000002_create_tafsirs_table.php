@@ -25,6 +25,8 @@ return new class extends Migration
 
             // Untuk mencegah duplikasi tafsir (satu ayat - satu sumber)
             $table->unique(['ayah_id', 'source_id']);
+            $table->index(['ayah_id', 'source_id']);
+            $table->index('source_id');
         });
     }
 

@@ -11,9 +11,9 @@ class AddEmbeddingsCommand extends Command
     protected $signature = 'quran:add-embeddings 
                             {--offset=0 : Mulai dari ayat keberapa}
                             {--limit=100 : Jumlah ayat yang diproses}
-                            {--model=text-embedding-3-small : Model embedding yang digunakan}';
+                            {--model=text-embedding-3-large : Model embedding yang digunakan}';
 
-    protected $description = 'Membuat dan menyimpan embedding untuk ayat-ayat Al-Qur’an ke database.';
+    protected $description = 'Membuat dan menyimpan embedding 3072-dimensi untuk ayat-ayat Al-Qur’an ke database.';
 
     public function handle(): void
     {
@@ -124,6 +124,6 @@ Disarankan jalankan ulang migrasi agar sesuai, atau gunakan model yang cocok.");
             $this->warn("Gagal membaca definisi tabel embeddings: {$e->getMessage()}");
         }
 
-        return 1536; // fallback aman
+        return 3072; // fallback aman
     }
 }

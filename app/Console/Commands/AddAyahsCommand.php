@@ -65,7 +65,7 @@ class AddAyahsCommand extends Command
                             'text_id' => $ayahData['translation'] ?? '',
                             'audio' => $ayahData['audio'] ?? null,
                             'image' => $ayahData['image'] ?? null,
-                            'tafsir' => $ayahData['tafsir'] ?? null,
+                            //'tafsir' => $ayahData['tafsir'] ?? null,
                             'meta' => $ayahData['meta'] ?? null,
                         ]
                     );

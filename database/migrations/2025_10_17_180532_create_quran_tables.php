@@ -26,6 +26,9 @@ return new class extends Migration
             $table->text('bismillah_id')->nullable();
             $table->jsonb('bismillah_audio')->nullable();
             $table->timestamps();
+
+            // Index for better performance
+            $table->index('number');
         });
 
         // 2️⃣ Ayahs table
@@ -38,9 +41,16 @@ return new class extends Migration
             $table->text('text_id')->nullable();
             $table->jsonb('audio')->nullable();
             $table->jsonb('image')->nullable();
-            $table->jsonb('tafsir')->nullable();
+            // Remove the tafsir column because we are storing tafsir in a separate table
+            //$table->jsonb('tafsir')->nullable();
             $table->jsonb('meta')->nullable();
             $table->timestamps();
+
+            // Add indexes for better performance
+            $table->unique('ayah_in_quran');
+            $table->index(['surah_id', 'ayah_in_surah']);
+            $table->index(['surah_id', 'ayah_in_quran']);
+            $table->index('ayah_in_quran');
         });
 
         // 3️⃣ Embeddings table
