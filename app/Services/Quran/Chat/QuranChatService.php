@@ -291,6 +291,7 @@ PROMPT;
     {
         return collect($verses)->map(function ($verse) {
             $formatted = [
+                'surah_id' => $verse->surah_id ?? null,
                 'surah_name' => $verse->surah_name ?? 'Unknown',
                 'verse_number' => $verse->text_id ?? 0,
                 'arabic_text' => $verse->text_ar ?? '',
@@ -299,12 +300,16 @@ PROMPT;
                     ? round($verse->similarity * 100, 2) . '%'
                     : 'N/A',
                 'ayah_in_surah' => $verse->ayah_in_surah ?? null, // Actual ayah number from DB
+                'short_text' => $verse->tafsir_short ?? null,
+                'long_text' => $verse->tafsir_long ?? null,
             ];
 
             // Add tafsir if available
             $tafsirText = $verse->tafsir_long ?? $verse->tafsir_text ?? $verse->tafsir_short ?? null;
             if (!empty($tafsirText)) {
                 $formatted['tafsir'] = [
+                    'short_text' => $verse->tafsir_short ?? null,
+                    'long_text' => $verse->tafsir->long_text ?? null,
                     'source' => $verse->tafsir_source_name ?? $verse->tafsir_source_code ?? 'Unknown',
                     'text' => $tafsirText,
                     'has_long_text' => !empty($verse->tafsir_long),

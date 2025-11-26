@@ -181,6 +181,45 @@
             margin: 0.5rem 0;
         }
 
+        /* Tafsir Main Content */
+        .main-tafsir {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid var(--primary-color);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .tafsir-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .tafsir-header i {
+            font-size: 1.1rem;
+        }
+
+        .tafsir-content {
+            line-height: 1.6;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            text-align: justify;
+        }
+
+        .tafsir-source {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
         /* Typing Indicators */
         .typing-indicator {
             align-self: flex-start;
@@ -761,7 +800,36 @@
                 this.messagesContainer.appendChild(messageDiv);
 
                 let index = 0;
-                const speed = 25; // kecepatan ketikan (ms per karakter)
+                const speed = 5; // kecepatan ketikan (ms per karakter)
+
+                // const typeChar = () => {
+                //     if (index < text.length) {
+                //         messageDiv.innerHTML = text.substring(0, index + 1);
+                //         index++;
+                //         this.scrollToBottom();
+                //         setTimeout(typeChar, speed);
+                //         let verseHtml = '<div class="mt-2"><small><strong>📖 testsaasd:</strong></small>';
+                //     } else {
+                //         // setelah selesai mengetik, tambahkan ayat referensi bila ada
+                //         if (verses && verses.length > 0) {
+                //             let verseHtml = '<div class="mt-2"><small><strong>📖 Ayat referensi:</strong></small>';
+                //             verses.forEach(verse => {
+                //                 verseHtml += `
+            //         <div class="message-verse">
+            //             <span class="surah">${verse.surah_name} Ayat ${verse.ayah_in_surah}</span>
+            //             <div class="arabic">${verse.arabic_text}</div>
+            //             <div class="translation">${verse.verse_number}</div>
+            //             <div class="translation">Tafsir KEMENAG: <br> ${verse.short_text}</div>
+            //             <div class="similarity">Relevansi: ${verse.similarity}</div>
+            //         </div>
+            //     `;
+                //             });
+                //             verseHtml += '</div>';
+                //             messageDiv.innerHTML += verseHtml;
+                //         }
+                //         this.scrollToBottom();
+                //     }
+                // };
 
                 const typeChar = () => {
                     if (index < text.length) {
@@ -770,27 +838,219 @@
                         this.scrollToBottom();
                         setTimeout(typeChar, speed);
                     } else {
-                        // setelah selesai mengetik, tambahkan ayat referensi bila ada
+                        // setelah selesai mengetik, tambahkan tafsir lengkap dan ayat referensi
                         if (verses && verses.length > 0) {
-                            let verseHtml = '<div class="mt-2"><small><strong>📖 Ayat referensi:</strong></small>';
-                            verses.forEach(verse => {
-                                verseHtml += `
-                        <div class="message-verse">
-                            <span class="surah">${verse.surah_name} Ayat ${verse.ayah_in_surah}</span>
-                            <div class="arabic">${verse.arabic_text}</div>
-                            <div class="translation">${verse.verse_number}</div>
-                            <div class="similarity">Relevansi: ${verse.similarity}</div>
-                        </div>
-                    `;
-                            });
-                            verseHtml += '</div>';
-                            messageDiv.innerHTML += verseHtml;
+                            this.addVersesToMessage(messageDiv, verses);
                         }
+
+                        // Tambahkan timestamp
+                        const timestamp = this.getCurrentTime();
+                        messageDiv.innerHTML += `<div class="timestamp">${timestamp}</div>`;
+
                         this.scrollToBottom();
                     }
                 };
 
                 typeChar();
+            }
+
+            // Fungsi baru untuk search semantic langsung
+            async searchSemantic(query) {
+                try {
+                    // Show processing
+                    this.showSystemProcessing();
+                    this.processingText.textContent = "Mencari ayat...";
+
+                    const response = await fetch(`/api/search/semantic?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+
+                    this.hideSystemProcessing();
+
+                    if (data.results && data.results.length > 0) {
+                        // Format data dari API semantic search ke format yang diharapkan frontend
+                        const formattedVerses = this.formatSemanticResults(data.results);
+
+                        // Tampilkan hasil
+                        this.displaySemanticResults(query, formattedVerses, data);
+                    } else {
+                        this.addSystemMessage('Tidak ditemukan ayat yang relevan.');
+                    }
+
+                } catch (error) {
+                    this.hideSystemProcessing();
+                    this.addSystemMessage('Error saat mencari ayat: ' + error.message);
+                    console.error('Search error:', error);
+                }
+            }
+
+            // Format hasil dari API semantic search
+            formatSemanticResults(results) {
+                return results.map(result => ({
+                    surah_name: this.getSurahName(result.surah_id),
+                    ayah_in_surah: result.ayah_in_surah,
+                    arabic_text: result.text_ar,
+                    translation: result.text_id,
+                    similarity: result.similarity,
+                    similarity_percent: (result.similarity * 100).toFixed(1),
+                    tafsir: result.tafsir ? {
+                        short_text: result.tafsir.short_text,
+                        long_text: result.tafsir.long_text,
+                        source: result.tafsir.source_id === 1 ? 'KEMENAG' : 'Unknown',
+                        language: result.tafsir.language
+                    } : null
+                }));
+            }
+
+            setupEventListeners() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+
+                this.messageInput.addEventListener('input', () => {
+                    this.sendButton.disabled = !this.messageInput.value.trim();
+                    this.autoResizeTextarea();
+                });
+
+                this.messageInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+
+                        // Cek jika query adalah format pencarian langsung
+                        const message = this.messageInput.value.trim();
+                        if (message.startsWith('/search ') || message.startsWith('/cari ')) {
+                            const query = message.replace(/^\/search |^\/cari /, '');
+                            this.searchSemantic(query);
+                        } else {
+                            this.sendMessage();
+                        }
+                    }
+                });
+
+                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+                this.clearChatBtn.addEventListener('click', () => this.clearChatHistory());
+            }
+
+            // Tampilkan hasil semantic search
+            displaySemanticResults(query, verses, apiData) {
+                // Tambahkan pesan user
+                this.addMessage('user', query);
+
+                // Buat container untuk hasil
+                const resultsDiv = document.createElement('div');
+                resultsDiv.className = 'message message-assistant';
+
+                let resultsHtml = `
+            <strong>🔍 Hasil Pencarian untuk: "${query}"</strong><br>
+            <small>Ditemukan ${apiData.results_count} hasil</small>
+        `;
+
+                // Tampilkan tafsir untuk setiap hasil
+                verses.forEach((verse, index) => {
+                    resultsHtml += `
+                <div class="search-result-item">
+                    <div class="result-header">
+                        <strong>${verse.surah_name} Ayat ${verse.ayah_in_surah}</strong>
+                        <span class="similarity-badge">${verse.similarity_percent}% Relevan</span>
+                    </div>
+                    <div class="arabic">${verse.arabic_text}</div>
+                    <div class="translation"><strong>Terjemahan:</strong> ${verse.translation}</div>
+            `;
+
+                    // Tampilkan tafsir jika ada
+                    if (verse.tafsir) {
+                        if (verse.tafsir.short_text) {
+                            resultsHtml += `
+                        <div class="tafsir-short">
+                            <strong>Tafsir Singkat:</strong> ${verse.tafsir.short_text}
+                        </div>
+                    `;
+                        }
+
+                        if (verse.tafsir.long_text) {
+                            resultsHtml += `
+                        <div class="tafsir-long">
+                            <strong>Tafsir Lengkap:</strong> 
+                            <div class="tafsir-content">${verse.tafsir.long_text}</div>
+                        </div>
+                    `;
+                        }
+
+                        resultsHtml +=
+                            `<div class="tafsir-source"><small>Sumber: ${verse.tafsir.source}</small></div>`;
+                    }
+
+                    resultsHtml += `</div>`;
+
+                    // Tambahkan pembatas antara hasil (kecuali untuk hasil terakhir)
+                    if (index < verses.length - 1) {
+                        resultsHtml += `<hr class="result-divider">`;
+                    }
+                });
+
+                // Tambahkan timestamp
+                const timestamp = this.getCurrentTime();
+                resultsHtml += `<div class="timestamp">${timestamp}</div>`;
+
+                resultsDiv.innerHTML = resultsHtml;
+                this.messagesContainer.appendChild(resultsDiv);
+                this.scrollToBottom();
+            }
+
+            addVersesToMessage(messageDiv, verses) {
+                let verseHtml = '';
+
+                // Tampilkan tafsir utama terlebih dahulu (gunakan long_text jika ada)
+                if (verses && verses.length > 0 && verses[0].tafsir) {
+                    const mainTafsir = verses[0].tafsir;
+                    verseHtml += `
+                        <div class="main-tafsir">
+                            <div class="tafsir-header">
+                                <i class="fas fa-book"></i>
+                                <strong>Tafsir ${verses[0].surah_name} Ayat ${verses[0].ayah_in_surah}</strong>
+                            </div>
+                            <div class="tafsir-content">
+                                ${mainTafsir.short_text}}
+                            </div>
+                            <div class="tafsir-source">
+                                Sumber: ${mainTafsir.source || 'Tafsir Kementerian Agama Republik Indonesia'}
+                            </div>
+                        </div>
+                    `;
+                } else if (verses && verses.length > 0 && (verses[0].long_text || verses[0].short_text)) {
+                    // Fallback: jika tafsir tidak ada di object tafsir, gunakan long_text/short_text langsung
+                    verseHtml += `
+                        <div class="main-tafsir">
+                            <div class="tafsir-header">
+                                <i class="fas fa-book"></i>
+                                <strong>Tafsir ${verses[0].surah_name} Ayat ${verses[0].ayah_in_surah}</strong>
+                            </div>
+                            <div class="tafsir-content">
+                                ${verses[0].long_text || verses[0].short_text}
+                            </div>
+                            <div class="tafsir-source">
+                                Sumber: Tafsir Kementerian Agama Republik Indonesia
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Kemudian tampilkan ayat referensi
+                if (verses && verses.length > 0) {
+                    verseHtml += '<div class="mt-3"><small><strong>📖 Ayat Referensi:</strong></small>';
+
+                    verses.forEach(verse => {
+                        verseHtml += `
+                            <div class="message-verse">
+                                <span class="surah">${verse.surah_name} Ayat ${verse.ayah_in_surah}</span>
+                                <div class="arabic">${verse.arabic_text}</div>
+                                <div class="translation">Terjemahan: ${verse.verse_number}</div>
+                                <div class="similarity">Tingkat Relevansi: ${verse.similarity}</div>
+                            </div>
+                        `;
+                    });
+
+                    verseHtml += '</div>';
+                }
+
+                messageDiv.innerHTML += verseHtml;
             }
 
 
@@ -804,18 +1064,53 @@
 
                 // Add verses if available
                 if (verses && verses.length > 0) {
-                    messageContent += '<div class="mt-2"><small><strong>📖 Ayat referensi:</strong></small>';
+                    // Tampilkan tafsir utama terlebih dahulu
+                    if (verses[0].tafsir) {
+                        const mainTafsir = verses[0].tafsir;
+                        messageContent += `
+                            <div class="main-tafsir">
+                                <div class="tafsir-header">
+                                    <i class="fas fa-book"></i>
+                                    <strong>Tafsir ${verses[0].surah_name} Ayat ${verses[0].ayah_in_surah}</strong>
+                                </div>
+                                <div class="tafsir-content">
+                                    ${mainTafsir.text || verses[0].long_text || verses[0].short_text}
+                                </div>
+                                <div class="tafsir-source">
+                                    Sumber: ${mainTafsir.source || 'Tafsir Kementerian Agama Republik Indonesia'}
+                                </div>
+                            </div>
+                        `;
+                    } else if (verses[0].long_text || verses[0].short_text) {
+                        messageContent += `
+                            <div class="main-tafsir">
+                                <div class="tafsir-header">
+                                    <i class="fas fa-book"></i>
+                                    <strong>Tafsir ${verses[0].surah_name} Ayat ${verses[0].ayah_in_surah}</strong>
+                                </div>
+                                <div class="tafsir-content">
+                                    ${verses[0].long_text || verses[0].short_text}
+                                </div>
+                                <div class="tafsir-source">
+                                    Sumber: Tafsir Kementerian Agama Republik Indonesia
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Kemudian tampilkan ayat referensi
+                    messageContent += '<div class="mt-3"><small><strong>📖 Ayat Referensi:</strong></small>';
                     verses.forEach(verse => {
                         messageContent += `
                             <div class="message-verse">
-                            <span class="surah">${verse.surah_name} Ayat ${verse.ayah_in_surah}</span>
-                            <div class="arabic">${verse.arabic_text}</div>
-                            <div class="translation">${verse.verse_number}</div>
-                            <div class="similarity">Relevansi: ${verse.similarity}</div>
+                                <span class="surah">${verse.surah_name} Ayat ${verse.ayah_in_surah}</span>
+                                <div class="arabic">${verse.arabic_text}</div>
+                                <div class="translation">Terjemahan: ${verse.verse_number}</div>
+                                <div class="similarity">Tingkat Relevansi: ${verse.similarity}</div>
                             </div>
                         `;
                     });
-                    messageContent += '</div>';
+                    messageContent += ' </div > ';
                 }
 
                 // Add timestamp
